@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MergeMaster | Sleek Mail Merge</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons for UI elements -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- SheetJS for Excel and CSV parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header no-print">
+            <div class="header-top">
+                <div class="logo">
+                    <i class="ph-fill ph-paper-plane-tilt"></i>
+                    <h1>MergeMaster</h1>
+                </div>
+                <div class="auth-controls">
+                    <div id="google-login-btn"></div>
+                    <div id="user-profile" class="user-profile hidden">
+                        <img id="user-avatar" src="" alt="Avatar">
+                        <span id="user-name"></span>
+                        <button id="btn-logout" class="icon-btn" title="Logout"><i class="ph ph-sign-out"></i></button>
+                    </div>
+                </div>
+            </div>
+            <p class="subtitle">Next-gen client-side mail merge. Fast, secure, and beautiful.</p>
+        </header>
+
+        <main class="main-content no-print">
+            <!-- Step 1: Data Source -->
+            <section class="glass-panel" id="data-section">
+                <div class="panel-header">
+                    <div class="step-badge">1</div>
+                    <h2>Data Source</h2>
+                </div>
+                <p class="help-text">Upload a CSV or Excel file (.xlsx, .xls) containing your data.</p>
+                
+                <div class="drop-zone" id="drop-zone">
+                    <i class="ph ph-upload-simple"></i>
+                    <p>Drag & drop file here or <span class="browse-link">Browse</span></p>
+                    <input type="file" id="file-input" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" hidden>
+                </div>
+
+                <div id="file-info" class="file-info hidden">
+                    <i class="ph-fill ph-file-csv"></i>
+                    <span id="file-name">filename.csv</span>
+                    <button id="remove-file" class="icon-btn" title="Remove file"><i class="ph ph-x"></i></button>
+                </div>
+
+                <!-- Available Variables Preview -->
+                <div id="variables-preview" class="variables-preview hidden">
+                    <h3>Available Variables</h3>
+                    <p class="help-text-small">Click to copy</p>
+                    <div class="tags-container" id="tags-container">
+                        <!-- Tags will be injected here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: Selection (Full Width) -->
+            <section class="glass-panel hidden" id="selection-section">
+                <div class="panel-header clickable" id="selection-header">
+                    <div class="header-main">
+                        <div class="step-badge">2</div>
+                        <h2>Select Contacts</h2>
+                    </div>
+                    <i class="ph ph-caret-up toggle-icon"></i>
+                </div>
+                
+                <div class="panel-content" id="selection-content">
+                    <p class="help-text">Select which rows to include in the merge. (Horizontal scroll for many columns)</p>
+                    
+                    <div class="table-actions">
+                        <div class="search-box">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <input type="text" id="contact-filter" placeholder="Search contacts...">
+                        </div>
+                        <div class="selection-btns">
+                            <button id="btn-select-all" class="text-btn">Select All</button>
+                            <button id="btn-select-none" class="text-btn">Select None</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="contacts-table">
+                            <thead>
+                                <tr id="table-headers">
+                                    <!-- Headers injected here -->
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Rows injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="email-settings hidden" id="email-settings">
+                        <div class="email-col-row">
+                            <div class="email-select-group">
+                                <label for="email-col-select-1">Primary Email Column:</label>
+                                <select id="email-col-select-1">
+                                    <option value="">-- Select Column --</option>
+                                </select>
+                            </div>
+                            <div class="email-select-group">
+                                <label for="email-col-select-2">Secondary Email Column (Optional):</label>
+                                <select id="email-col-select-2">
+                                    <option value="">-- Select Column --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="split-row">
+                <div class="panel-left">
+                    <!-- Step 3: Template -->
+                    <section class="glass-panel" id="template-section">
+                        <div class="panel-header">
+                            <div class="step-badge">3</div>
+                            <h2>Template</h2>
+                        </div>
+                        <p class="help-text">Write your document template. Use <code>{{VariableName}}</code> to insert data.</p>
+                        
+                        <div class="subject-container">
+                            <label for="email-subject">Email Subject:</label>
+                            <input type="text" id="email-subject" placeholder="e.g. Hello {{Name}}, check this out!">
+                        </div>
+
+                        <div class="editor-container">
+                            <textarea id="template-editor" placeholder="Dear {{Name}},&#10;&#10;We are writing to inform you about {{Topic}}..."></textarea>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="panel-right">
+                    <!-- Step 4: Preview & Export -->
+                    <section class="glass-panel output-panel" id="output-section">
+                        <div class="panel-header">
+                            <div class="step-badge">4</div>
+                            <h2>Preview & Export</h2>
+                        </div>
+                        
+                        <div class="actions-row">
+                            <button id="btn-generate" class="primary-btn" disabled>
+                                <i class="ph-bold ph-magic-wand"></i> Generate Merge
+                            </button>
+                            <button id="btn-send-email" class="accent-btn hidden">
+                                <i class="ph-bold ph-paper-plane"></i> Send Emails
+                            </button>
+                            <button id="btn-print" class="secondary-btn hidden">
+                                <i class="ph-bold ph-printer"></i> Print
+                            </button>
+                        </div>
+
+                        <div class="status-bar hidden" id="status-bar">
+                            <span id="status-text">Generated 0 documents.</span>
+                        </div>
+
+                        <div class="progress-container hidden" id="progress-container">
+                            <div class="progress-bar-bg">
+                                <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                            </div>
+                            <p id="progress-status">Sending 0/0...</p>
+                        </div>
+
+                        <div class="preview-container" id="preview-container">
+                            <div class="empty-state">
+                                <i class="ph ph-files"></i>
+                                <p>Upload data and generate to see preview.</p>
+                            </div>
+                            <!-- Merged documents will be injected here -->
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- Print View Container (Hidden on screen, shown in print) -->
+        <div id="print-view" class="print-only">
+            <!-- Documents for printing injected here -->
+        </div>
+    </div>
+
+    <!-- Custom Script -->
+    <script src="script.js"></script>
+</body>
+</html>
